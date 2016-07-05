@@ -3,6 +3,8 @@ var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
 
+var session = require('express-session');
+
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -12,6 +14,8 @@ var Link = require('./app/models/link');
 var Click = require('./app/models/click');
 
 var app = express();
+
+app.use(session({ secret: 'keyboard cat', cookie: { maxAge: 60000 }}));
 
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
@@ -25,12 +29,21 @@ app.use(express.static(__dirname + '/public'));
 
 app.get('/', 
 function(req, res) {
-  res.render('index');
+  if (req.session.user === undefined) {
+    res.render('login');
+  } else {
+    res.render('index');    
+  }
 });
 
 app.get('/create', 
 function(req, res) {
   res.render('index');
+});
+
+app.get('/signup',
+function(req, res) {
+  res.render('signup');
 });
 
 app.get('/links', 
@@ -76,6 +89,7 @@ function(req, res) {
 // Write your authentication routes here
 /************************************************************/
 
+
 app.post('/signup', 
   function(req, res) {
     /// duplicate catching
@@ -83,23 +97,64 @@ app.post('/signup',
     new User({username: req.body.username, password: req.body.password})
       .fetch()
       .then(function(found) {
-        console.log(found);
         if (found) {
-          console.log('FOUND');
           res.sendStatus(200).send(found.attributes);  
         } else {
-          console.log('NOT FOUND');
           Users.create({
             username: req.body.username,
             password: req.body.password
           })
           .then(function(newUser) {
-            res.status(200).send(newUser.attributes);
+            res.setHeader('location', '/');
+            //res.status(200).send(newUser.attributes);
+            res.redirect('/');
+            // res.render('/');
           });
         }
       });
   }
   );
+
+app.post('/login', 
+  function(req, res) {
+
+    // User.query({where: {username: req.body.username}})
+    //   .fetch()
+    //   .then(function(err, data) {
+    //     console.log(data);
+    //     // does password match usename's password?
+    //       // if yes, direct to index
+    //       // if no, direct back to '/'
+    //   });
+
+    new User({username: req.body.username, password: req.body.password})
+      .fetch()
+      .then(function(results) {
+
+        if (results === null) {
+          console.log('failed');
+          res.redirect('/');
+        } else {
+          console.log('success');
+          req.session.user = true;
+          console.log('the user has a session');
+          // res.redirect('index');
+          // res.render('index');
+          res.render('index');    
+        }
+
+      });
+  });
+
+app.get('/loggedout',
+  function(req, res) {
+    console.log('hello wurld');
+    req.session.user = false;
+    res.redirect('/');
+    res.render('login');
+  });
+
+
 
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail
