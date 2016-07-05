@@ -17,6 +17,8 @@ var app = express();
 
 app.use(session({ secret: 'keyboard cat', cookie: { maxAge: 60000 }}));
 
+
+
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
 app.use(partials());
@@ -26,10 +28,10 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
-
+var sess; 
 app.get('/', 
 function(req, res) {
-  if (req.session.user === undefined) {
+  if (req.session.loggedin === false) {
     res.render('login');
   } else {
     res.render('index');    
@@ -118,15 +120,6 @@ app.post('/signup',
 app.post('/login', 
   function(req, res) {
 
-    // User.query({where: {username: req.body.username}})
-    //   .fetch()
-    //   .then(function(err, data) {
-    //     console.log(data);
-    //     // does password match usename's password?
-    //       // if yes, direct to index
-    //       // if no, direct back to '/'
-    //   });
-
     new User({username: req.body.username, password: req.body.password})
       .fetch()
       .then(function(results) {
@@ -136,10 +129,9 @@ app.post('/login',
           res.redirect('/');
         } else {
           console.log('success');
-          req.session.user = true;
+          console.log(req.session);
+          req.session.loggedin = true;
           console.log('the user has a session');
-          // res.redirect('index');
-          // res.render('index');
           res.render('index');    
         }
 
@@ -149,7 +141,9 @@ app.post('/login',
 app.get('/loggedout',
   function(req, res) {
     console.log('hello wurld');
-    req.session.user = false;
+    console.log(req.session);
+    req.session.loggedin = false;
+    console.log(req.session);
     res.redirect('/');
     res.render('login');
   });
