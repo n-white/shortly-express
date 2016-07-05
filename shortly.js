@@ -134,7 +134,6 @@ app.post('/login',
           console.log('the user has a session');
           res.render('index');    
         }
-
       });
   });
 
