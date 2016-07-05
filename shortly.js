@@ -15,7 +15,7 @@ var Click = require('./app/models/click');
 
 var app = express();
 
-app.use(session({ secret: 'keyboard cat', cookie: { maxAge: 60000 }}));
+app.use(session({ secret: 'keyboard cat', cookie: { maxAge: 10000 }}));
 
 
 
@@ -28,19 +28,23 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
+app.authentify = function(req, res, whereTo) {
+  if (req.session.loggedin === false || req.session.loggedin === undefined) {
+    res.render('login');
+  } else {
+    res.render(whereTo);    
+  }
+};
+
 var sess; 
 app.get('/', 
 function(req, res) {
-  if (req.session.loggedin === false) {
-    res.render('login');
-  } else {
-    res.render('index');    
-  }
+  app.authentify(req, res, '/');
 });
 
 app.get('/create', 
 function(req, res) {
-  res.render('index');
+  app.authentify(req, res, '/create');
 });
 
 app.get('/signup',
@@ -139,10 +143,15 @@ app.post('/login',
 
 app.get('/loggedout',
   function(req, res) {
-    console.log('hello wurld');
-    console.log(req.session);
-    req.session.loggedin = false;
-    console.log(req.session);
+    // console.log('hello wurld');
+    // console.log(req.session);
+    req.session.destroy(function(err) {
+      if (err) {
+        console.log('error with loging out: ', err);        
+      }
+    });
+    // req.session.loggedin = false;
+    console.log('logging out');
     res.redirect('/');
     res.render('login');
   });
